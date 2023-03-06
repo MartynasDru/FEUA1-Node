@@ -1,11 +1,36 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+const connection = mongoose.createConnection(
+    'mongodb+srv://test:test123@cluster0.mnnyqkq.mongodb.net/library?retryWrites=true&w=majority'
+);
+
+const connection2 = mongoose.createConnection(
+    'mongodb+srv://test:test123@cluster0.mnnyqkq.mongodb.net/shop?retryWrites=true&w=majority'
+);
+
+// mongoose.connect(
+//     'mongodb+srv://test:test123@cluster0.mnnyqkq.mongodb.net/library?retryWrites=true&w=majority'
+// );
+
+// const db = mongoose.connection;
+
+connection.on('error', (error) => console.error(error));
+connection.once('open', () => {
+    console.log('Connected to mongoDB!');
+});
+
+connection2.on('error', (error) => console.error(error));
+connection2.once('open', () => {
+    console.log('Connected to mongoDB!');
+});
 
 const PRODUCTS = [
     { name: 'Gitara', price: 100 },
@@ -22,6 +47,65 @@ let TASKS = [
     { id: 2, name: 'Išsiurbti kambarį', isComplete: true }
 ];
 let LAST_TASK_ID = TASKS[TASKS.length - 1].id;
+
+const bookSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    author: {
+        type: String,
+        required: true
+    },
+    pageCount: {
+        type: Number,
+        required: true
+    }
+});
+
+const bookModel = connection.model('book', bookSchema);
+
+app.get('/books', async (req, res) => {
+    const books = await bookModel.find();
+    res.json(books);
+});
+
+app.post('/books', async (req, res) => {
+    const body = req.body;
+    const result = await bookModel.create(
+        { 
+            name: body.name, 
+            author: body.author, 
+            pageCount: body.pageCount 
+        }
+    );
+    res.json(result);
+});
+
+app.put('/books/:id', async (req, res) => {
+    const id = req.params.id;
+    const body = req.body;
+
+    if (body.name && body.author && body.pageCount) {
+        const result = await bookModel.updateOne(
+            { _id: id }, 
+            { name: body.name, author: body.author, pageCount: body.pageCount }
+        );
+        res.json(result);
+    }
+
+    res.json({ message: 'Incorrect book information' })
+});
+
+app.patch('/books/:id', async (req, res) => {
+    const id = req.params.id;
+    const body = req.body;
+    const result = await bookModel.updateOne(
+        { _id: id }, 
+        { name: body.name, author: body.author, pageCount: body.pageCount }
+    );
+    res.json(result);
+});
 
 app.get('/products', (req, res) => {
     res.json(PRODUCTS);
