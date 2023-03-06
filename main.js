@@ -26,11 +26,26 @@ fetch('http://localhost:3000/tasks')
     .then(data => {
         const ul = document.createElement('ul');
 
+        ul.style.padding = 0;
+        ul.style.listStyle = 'none';
+        ul.style.display = 'flex';
+        ul.style.gap = '10px';
+        ul.style.flexDirection = 'column';
+
         data.forEach((task) => {
             const li = document.createElement('li');
+
+            li.style.display = 'flex';
+            li.style.gap = '10px';
             
             const taskNameElement = document.createElement('span');
             taskNameElement.textContent = task.name;
+
+            taskNameElement.style.flexGrow = 1;
+
+            if (task.isComplete) {
+                taskNameElement.style.textDecoration = 'line-through';
+            }
 
             const deleteButton = document.createElement('button');
             deleteButton.textContent = 'DELETE';
@@ -45,8 +60,27 @@ fetch('http://localhost:3000/tasks')
                 }
             });
 
+            const completeButton = document.createElement('button');
+            completeButton.textContent = task.isComplete ? 'BRING BACK TO INCOMPLETE' : 'COMPLETE';
+
+            completeButton.addEventListener('click', () => {
+                fetch(`http://localhost:3000/tasks/${task.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        isComplete: !task.isComplete
+                    })
+                })
+                .then(() => {
+                    location.reload();
+                });
+            });
+
             li.appendChild(taskNameElement);
             li.appendChild(deleteButton);
+            li.appendChild(completeButton);
 
             ul.appendChild(li);
         });
