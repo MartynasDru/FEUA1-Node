@@ -91,9 +91,40 @@ const studentSchema = new mongoose.Schema({
 
 const studentModel = connection3.model('student', studentSchema);
 
+const SORT_DIRECTION = {
+    asc: 'asc',
+    desc: 'desc'
+};
+
 app.get('/students', async (req, res) => {
-    const students = await studentModel.find();
+    const { name, surname, averageGrade, sortDirection = SORT_DIRECTION.asc, sortBy } = req.query; 
+    const searchFilter = {};
+    const sortFilter = {};
+
+    if (Object.values(SORT_DIRECTION).includes(sortDirection) && sortBy) {
+        sortFilter[sortBy] = sortDirection === SORT_DIRECTION.asc ? 1 : -1;
+    }
+    
+    if (name) {
+        searchFilter.name = name;
+    }
+
+    if (surname) {
+        searchFilter.surname = surname;
+    }
+
+    if (averageGrade) {
+        searchFilter.averageGrade = averageGrade;
+    }
+
+    const students = await studentModel.find(searchFilter).sort(sortFilter);
     res.json(students);
+});
+
+app.post('/students', async (req, res) => {
+    const { name, surname, averageGrade } = req.body;
+    const result = await studentModel.create({ name, surname, averageGrade });
+    res.json(result);
 });
 
 app.get('/books', async (req, res) => {
