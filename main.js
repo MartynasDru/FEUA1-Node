@@ -1,5 +1,7 @@
 const addNewTaskForm = document.querySelector('#add-new-task-form');
 const taskNameInput = document.querySelector('#task-name-input');
+const tasksListContainer = document.querySelector('#tasks-list');
+const studentsListContainer = document.querySelector('#students-list');
 
 addNewTaskForm.addEventListener('submit', () => {
     const newTaskName = taskNameInput.value;
@@ -85,5 +87,19 @@ fetch('http://localhost:3000/tasks')
             ul.appendChild(li);
         });
 
-        document.body.appendChild(ul);
+        tasksListContainer.appendChild(ul);
+    });
+
+fetch('http://localhost:3000/students')
+    .then(res => res.json())
+    .then(students => {
+        const ul = document.createElement('ul');
+
+        students.forEach((student) => {
+            const li = document.createElement('li');
+            li.textContent = `${student.name} ${student.surname}`;
+            ul.appendChild(li);
+        });
+
+        studentsListContainer.appendChild(ul);
     });

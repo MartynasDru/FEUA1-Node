@@ -16,6 +16,10 @@ const connection2 = mongoose.createConnection(
     'mongodb+srv://test:test123@cluster0.mnnyqkq.mongodb.net/shop?retryWrites=true&w=majority'
 );
 
+const connection3 = mongoose.createConnection(
+    'mongodb+srv://test:test123@cluster0.mnnyqkq.mongodb.net/school?retryWrites=true&w=majority'
+);
+
 // mongoose.connect(
 //     'mongodb+srv://test:test123@cluster0.mnnyqkq.mongodb.net/library?retryWrites=true&w=majority'
 // );
@@ -24,12 +28,17 @@ const connection2 = mongoose.createConnection(
 
 connection.on('error', (error) => console.error(error));
 connection.once('open', () => {
-    console.log('Connected to mongoDB!');
+    console.log('Connected to library mongoDB database');
 });
 
 connection2.on('error', (error) => console.error(error));
 connection2.once('open', () => {
-    console.log('Connected to mongoDB!');
+    console.log('Connected to shop mongoDB database!');
+});
+
+connection3.on('error', (error) => console.error(error));
+connection3.once('open', () => {
+    console.log('Connected to school mongoDB database!');
 });
 
 const PRODUCTS = [
@@ -64,6 +73,28 @@ const bookSchema = new mongoose.Schema({
 });
 
 const bookModel = connection.model('book', bookSchema);
+
+const studentSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    surname: {
+        type: String,
+        required: true,
+    },
+    averageGrade: {
+        type: Number,
+        required: false
+    }
+});
+
+const studentModel = connection3.model('student', studentSchema);
+
+app.get('/students', async (req, res) => {
+    const students = await studentModel.find();
+    res.json(students);
+});
 
 app.get('/books', async (req, res) => {
     const books = await bookModel.find();
