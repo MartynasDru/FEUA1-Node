@@ -128,8 +128,48 @@ app.post('/students', async (req, res) => {
 });
 
 app.get('/books', async (req, res) => {
-    const books = await bookModel.find();
+    const { name, author, pageCount, sortDirection = SORT_DIRECTION.asc, sortBy } = req.query;
+    const searchFilter = {};
+    const sortFilter = {};
+
+    if (Object.values(SORT_DIRECTION).includes(sortDirection) && sortBy) {
+        sortFilter[sortBy] = sortDirection === SORT_DIRECTION.asc ? 1 : -1;
+    }
+
+    if (name) {
+        searchFilter.name = name;
+    }
+
+    if (author) {
+        searchFilter.author = author;
+    }
+
+    if (pageCount) {
+        searchFilter.pageCount = pageCount;
+    }
+
+    const books = await bookModel.find(searchFilter).sort(sortFilter);
     res.json(books);
+});
+
+app.get('/books/:id', async (req, res) => {
+    const { id } = req.params;
+
+    // 1 variantas - const book = await bookModel.find({ _id: id });
+
+    // 2 variantas
+    // const objectId = mongoose.Types.ObjectId(id);
+    // const book = await bookModel.find(objectId);
+
+    // 3 variantas
+    try {
+        const book = await bookModel.findById(id);
+        res.json(book);
+    } catch (error) {
+        res.json({
+            message: error.message
+        })
+    }
 });
 
 app.post('/books', async (req, res) => {
