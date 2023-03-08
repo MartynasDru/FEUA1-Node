@@ -51,7 +51,26 @@ router.get('/books', async (req, res) => {
         searchFilter.pageCount = pageCount;
     }
 
-    const books = await bookModel.find(searchFilter).sort(sortFilter);
+    // const books = await bookModel.find(searchFilter).sort(sortFilter);
+    const books = await bookModel.aggregate([
+        {
+            $lookup: {
+                from: 'users',
+                foreignField: '_id',
+                localField: 'userId',
+                as: 'user'
+            }
+        },
+        {
+            $unwind: {
+                path: "$user",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $unset: "userId"
+        }
+    ]);
     res.json(books);
 });
 
