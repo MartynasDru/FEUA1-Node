@@ -48,11 +48,10 @@ router.get('/books', async (req, res) => {
     }
 
     if (pageCount) {
-        searchFilter.pageCount = pageCount;
+        searchFilter.pageCount = Number(pageCount);
     }
 
-    // const books = await bookModel.find(searchFilter).sort(sortFilter);
-    const books = await bookModel.aggregate([
+    const aggregateConfig = [
         {
             $lookup: {
                 from: 'users',
@@ -70,7 +69,22 @@ router.get('/books', async (req, res) => {
         {
             $unset: "userId"
         }
-    ]);
+    ];
+
+    if (Object.values(sortFilter).length > 0) {
+        aggregateConfig.unshift({
+            $sort: sortFilter
+        });
+    }
+
+    if (Object.values(searchFilter).length > 0) {
+        aggregateConfig.unshift({
+            $match: searchFilter
+        });
+    }
+
+    // const books = await bookModel.find(searchFilter).sort(sortFilter);
+    const books = await bookModel.aggregate(aggregateConfig);
     res.json(books);
 });
 
