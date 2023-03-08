@@ -3,14 +3,14 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
+const libraryRouter = require('./router/library');
+const { SORT_DIRECTION } = require('./utils/constants');
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-const connection = mongoose.createConnection(
-    'mongodb+srv://test:test123@cluster0.mnnyqkq.mongodb.net/library?retryWrites=true&w=majority'
-);
+app.use(libraryRouter);
 
 const connection2 = mongoose.createConnection(
     'mongodb+srv://test:test123@cluster0.mnnyqkq.mongodb.net/shop?retryWrites=true&w=majority'
@@ -25,11 +25,6 @@ const connection3 = mongoose.createConnection(
 // );
 
 // const db = mongoose.connection;
-
-connection.on('error', (error) => console.error(error));
-connection.once('open', () => {
-    console.log('Connected to library mongoDB database');
-});
 
 connection2.on('error', (error) => console.error(error));
 connection2.once('open', () => {
@@ -57,23 +52,6 @@ let TASKS = [
 ];
 let LAST_TASK_ID = TASKS[TASKS.length - 1].id;
 
-const bookSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true
-    },
-    author: {
-        type: String,
-        required: true
-    },
-    pageCount: {
-        type: Number,
-        required: true
-    }
-});
-
-const bookModel = connection.model('book', bookSchema);
-
 const studentSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -90,11 +68,6 @@ const studentSchema = new mongoose.Schema({
 });
 
 const studentModel = connection3.model('student', studentSchema);
-
-const SORT_DIRECTION = {
-    asc: 'asc',
-    desc: 'desc'
-};
 
 app.get('/students', async (req, res) => {
     const { name, surname, averageGrade, sortDirection = SORT_DIRECTION.asc, sortBy } = req.query; 
@@ -124,88 +97,6 @@ app.get('/students', async (req, res) => {
 app.post('/students', async (req, res) => {
     const { name, surname, averageGrade } = req.body;
     const result = await studentModel.create({ name, surname, averageGrade });
-    res.json(result);
-});
-
-app.get('/books', async (req, res) => {
-    const { name, author, pageCount, sortDirection = SORT_DIRECTION.asc, sortBy } = req.query;
-    const searchFilter = {};
-    const sortFilter = {};
-
-    if (Object.values(SORT_DIRECTION).includes(sortDirection) && sortBy) {
-        sortFilter[sortBy] = sortDirection === SORT_DIRECTION.asc ? 1 : -1;
-    }
-
-    if (name) {
-        searchFilter.name = name;
-    }
-
-    if (author) {
-        searchFilter.author = author;
-    }
-
-    if (pageCount) {
-        searchFilter.pageCount = pageCount;
-    }
-
-    const books = await bookModel.find(searchFilter).sort(sortFilter);
-    res.json(books);
-});
-
-app.get('/books/:id', async (req, res) => {
-    const { id } = req.params;
-
-    // 1 variantas - const book = await bookModel.find({ _id: id });
-
-    // 2 variantas
-    // const objectId = mongoose.Types.ObjectId(id);
-    // const book = await bookModel.find(objectId);
-
-    // 3 variantas
-    try {
-        const book = await bookModel.findById(id);
-        res.json(book);
-    } catch (error) {
-        res.json({
-            message: error.message
-        })
-    }
-});
-
-app.post('/books', async (req, res) => {
-    const body = req.body;
-    const result = await bookModel.create(
-        { 
-            name: body.name, 
-            author: body.author, 
-            pageCount: body.pageCount 
-        }
-    );
-    res.json(result);
-});
-
-app.put('/books/:id', async (req, res) => {
-    const id = req.params.id;
-    const body = req.body;
-
-    if (body.name && body.author && body.pageCount) {
-        const result = await bookModel.updateOne(
-            { _id: id }, 
-            { name: body.name, author: body.author, pageCount: body.pageCount }
-        );
-        res.json(result);
-    }
-
-    res.json({ message: 'Incorrect book information' })
-});
-
-app.patch('/books/:id', async (req, res) => {
-    const id = req.params.id;
-    const body = req.body;
-    const result = await bookModel.updateOne(
-        { _id: id }, 
-        { name: body.name, author: body.author, pageCount: body.pageCount }
-    );
     res.json(result);
 });
 
