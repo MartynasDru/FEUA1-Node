@@ -26,7 +26,25 @@ const taskSchema = new mongoose.Schema({
 const taskModel = tasksManagerDbConnection.model('task', taskSchema);
 
 router.get('/tasks', async (req, res) => {
-    const tasks = await taskModel.find();
+    const tasks = await taskModel.aggregate([
+        {
+            $lookup: {
+                from: 'users',
+                foreignField: '_id',
+                localField: 'userId',
+                as: 'user'
+            }
+        },
+        {
+            $unwind: {
+                path: "$user",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $unset: "userId"
+        }
+    ]);
     res.json(tasks);
 });
 
