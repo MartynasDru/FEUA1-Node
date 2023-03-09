@@ -3,60 +3,87 @@ const mongoose = require('mongoose');
 
 const router = express.Router();
 
-let TASKS = [
-    { id: 1, name: 'Išnešti šiukšles', isComplete: false },
-    { id: 2, name: 'Išsiurbti kambarį', isComplete: true }
-];
-let LAST_TASK_ID = TASKS[TASKS.length - 1].id;
+const tasksManagerDbConnection = mongoose.createConnection(
+    'mongodb+srv://test:test123@cluster0.mnnyqkq.mongodb.net/tasksManager?retryWrites=true&w=majority'
+);
 
-router.get('/tasks', (req, res) => {
-    res.json(TASKS);
+tasksManagerDbConnection.on('error', (error) => console.error(error));
+tasksManagerDbConnection.once('open', () => {
+    console.log('Connected to tasks manager mongoDB database!');
 });
 
-router.get('/tasks/:id', (req, res) => {
-    // const id = req.params.id;
+const taskSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    isComplete: {
+        type: Boolean,
+        required: true
+    }
+});
+
+const taskModel = tasksManagerDbConnection.model('task', taskSchema);
+
+router.get('/tasks', async (req, res) => {
+    const tasks = await taskModel.find();
+    res.json(tasks);
+});
+
+router.get('/tasks/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const task = await taskModel.find({ _id: id });
+        res.json(task);
+    } catch (e) {
+        res.json(e.message);
+    }
+});
+
+router.post('/tasks', async (req, res) => {
+    const { name, isComplete } = req.body;
+
+    try {
+        const result = await taskModel.create({ name, isComplete });
+        res.json(result);
+    } catch (e) {
+        res.json(e.message);
+    }
+});
+
+router.delete('/tasks/:id', async (req, res) => {
+    const { id } = req.params;
+    
+    try {
+        const result = await taskModel.deleteOne({ _id: id });
+        res.json(result);
+    } catch (e) {
+        res.json(e.message);
+    }
+});
+
+router.patch('/tasks/:id', async (req, res) => {
+    const body = req.body;
     const { id } = req.params;
 
-    const task = TASKS.find((task) => task.id.toString() === id.toString());
+    // const UPDATED_TASKS = TASKS.map((task) => {
+    //     if (task.id.toString() === id.toString()) {
+    //         return {
+    //             ...task, // id, name, isComplete
+    //             ...body // isComplete
+    //         }
+    //     }
 
-    if (!task) {
-        res.status(404);
-        res.json({ message: 'Task not found' })
+    //     return task;
+    // });
+    // TASKS = UPDATED_TASKS;
+
+    try {
+        const result = await taskModel.updateOne({ _id: id }, body);
+        res.json(result); 
+    } catch (e) {
+        res.json(e.message);
     }
-
-    res.json(task);
-});
-
-router.post('/tasks', (req, res) => {
-    const newTask = req.body;
-    LAST_TASK_ID++;
-    const newTaskId = LAST_TASK_ID;
-    TASKS.push({ id: newTaskId, name: newTask.name, isComplete: false });
-    res.json(TASKS);
-});
-
-router.delete('/tasks/:id', (req, res) => {
-    const id = req.params.id;
-    const UPDATED_TASKS = TASKS.filter((task) => task.id.toString() !== id.toString());
-    TASKS = UPDATED_TASKS;
-    res.json(TASKS);
-});
-
-router.patch('/tasks/:id', (req, res) => {
-    const body = req.body;
-    const id = req.params.id;
-    const UPDATED_TASKS = TASKS.map((task) => {
-        if (task.id.toString() === id.toString()) {
-            return {
-                ...task, // id, name, isComplete
-                ...body // isComplete
-            }
-        }
-
-        return task;
-    });
-    TASKS = UPDATED_TASKS;
-    res.json(TASKS); 
 });
 
 module.exports = router;
